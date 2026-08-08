@@ -1,5 +1,3 @@
-"""Participant 1: validate the source and prepare reusable event features."""
-
 from pathlib import Path
 
 import duckdb
@@ -47,12 +45,13 @@ def source_profile(source_path: Path) -> dict[str, int | float]:
 def prepare_events(source_path: Path, database_path: Path) -> dict[str, int | float]:
     if not source_path.is_file():
         raise FileNotFoundError(
-            f"Source data not found: {source_path}. Run scripts/download_data.py first."
+            f"Исходные данные не найдены: {source_path}. "
+            "Сначала запустите scripts/download_data.py."
         )
 
     profile = source_profile(source_path)
     if profile["required_nulls"] != 0 or profile["invalid_event_type"] != 0:
-        raise ValueError(f"Source quality checks failed: {profile}")
+        raise ValueError(f"Проверка исходных данных не пройдена: {profile}")
 
     connection = connect(database_path)
     source = sql_path(source_path)
@@ -95,5 +94,5 @@ def prepare_events(source_path: Path, database_path: Path) -> dict[str, int | fl
     stage_rows = connection.execute("SELECT count(*) FROM stage_events").fetchone()[0]
     connection.close()
     if stage_rows != profile["events"]:
-        raise RuntimeError("Prepared events do not match the source row count")
+        raise RuntimeError("Количество подготовленных событий не совпало с источником")
     return profile

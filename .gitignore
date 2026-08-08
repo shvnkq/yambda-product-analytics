@@ -1,9 +1,9 @@
-# Downloaded Yambda data is reproducible and must not be committed.
+# Данные Yambda не добавляются в репозиторий.
 data/yambda/
 data/processed/
 data/interim/
 
-# Local analytical artifacts and environments.
+# Локальные результаты и окружение.
 *.duckdb
 *.db
 .venv/
@@ -11,6 +11,6 @@ __pycache__/
 .ipynb_checkpoints/
 .env
 
-# Local working directories are not project sources.
+# Рабочие каталоги.
 work/
 outputs/
