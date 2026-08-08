@@ -1,6 +1,7 @@
 # Downloaded Yambda data is reproducible and must not be committed.
 data/yambda/
 data/processed/
+data/interim/
 
 # Local analytical artifacts and environments.
 *.duckdb
