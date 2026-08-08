@@ -1,7 +1,10 @@
+# Работа с данными
 duckdb==1.5.5
 huggingface-hub==1.26.0
-ipykernel
-jupyter
 pandas==2.2.3
 pyarrow==19.0.0
+
+# Запуск ноутбуков
+ipykernel
+jupyter
 
