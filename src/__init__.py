@@ -1,1 +1,0 @@
-"""Yambda analytics package."""

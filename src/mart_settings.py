@@ -1,5 +1,3 @@
-"""Shared metric definitions and DuckDB settings for the first stage."""
-
 from pathlib import Path
 
 import duckdb
