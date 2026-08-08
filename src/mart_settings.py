@@ -1,13 +1,16 @@
+"""Shared metric definitions and DuckDB settings for the first stage."""
+
 from pathlib import Path
 
 import duckdb
 
-from src.quality_checks import sql_path
-
-
 DAY_SECONDS = 86_400
 SESSION_GAP_SECONDS = 1_800
 LISTEN_PLUS_THRESHOLD = 50
+
+
+def sql_path(path: Path) -> str:
+    return str(path.resolve()).replace("\\", "/").replace("'", "''")
 
 
 def connect(database_path: Path, *, read_only: bool = False) -> duckdb.DuckDBPyConnection:
