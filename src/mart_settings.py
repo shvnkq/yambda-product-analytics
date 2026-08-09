@@ -5,6 +5,7 @@ import duckdb
 DAY_SECONDS = 86_400
 SESSION_GAP_SECONDS = 1_800
 LISTEN_PLUS_THRESHOLD = 50
+TRACK_MIN_LISTENS = 100
 
 
 def sql_path(path: Path) -> str:

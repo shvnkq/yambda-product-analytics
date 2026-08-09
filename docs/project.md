@@ -11,9 +11,9 @@
 | Ноутбук | Код | Результат |
 |---|---|---|
 | `01_source_quality.ipynb` | `prepare_events.py` | подготовленные события |
-| `02_product_mart.ipynb` | `product_mart.py` | витрина по дням |
-| `03_user_mart.ipynb` | `user_mart.py` | витрина пользователей |
-| `04_track_mart.ipynb` | `track_mart.py` | витрина треков и общая сверка |
+| `02_product_mart.ipynb` | `product_mart.py` | продуктовая витрина и воронка рекомендаций |
+| `03_user_mart.ipynb` | `user_mart.py` | пользователи, пользовательские дни и retention |
+| `04_track_mart.ipynb` | `track_mart.py` | качество треков и общая сверка |
 
 Сначала выполняется подготовка событий. После неё три витрины можно рассчитывать независимо.
 
@@ -24,12 +24,32 @@
 - Listen+: прослушано больше 50% трека.
 - Повтор: `played_ratio_pct > 100`.
 - `is_organic = 0` — рекомендация, `is_organic = 1` — органика.
+- Retention Dn: доля пользователей с прослушиванием ровно через n дней после первого прослушивания.
+- Сегмент рекомендаций определяется по их доле в первый день пользователя.
+- Начальная активность делится на группы 1–10, 11–30, 31–60 и 61+ прослушиваний.
+- Надёжная выборка трека: не менее 100 прослушиваний.
+
+## Витрины для дашбордов
+
+- `mart_product_day.parquet` — состояние продукта по дням.
+- `mart_recommendation_funnel.parquet` — воронка качества рекомендаций.
+- `mart_user.parquet` — итоговые показатели пользователей.
+- `mart_user_day.parquet` — активность пользователей по дням.
+- `mart_retention_cohort.parquet` — когортный retention и сегменты рекомендаций.
+- `mart_track.parquet` — качество и популярность треков.
 
 ## Запуск
 
 ```powershell
 python scripts/download_data.py
 python scripts/build_marts.py
+```
+
+Если `stage_events` уже подготовлена и база открыта в Jupyter, витрины можно
+пересобрать без перезаписи промежуточного слоя:
+
+```powershell
+python scripts/build_marts.py --reuse-stage
 ```
 
 Исходные данные, промежуточная DuckDB и Parquet-витрины хранятся локально в
