@@ -31,7 +31,7 @@ def save_csv(frame: pd.DataFrame, path: Path) -> None:
 def export_product(mart_dir: Path, output_dir: Path) -> pd.DataFrame:
     path = require_file(mart_dir / "mart_product_day.parquet")
     product = pd.read_parquet(path).sort_values("day_idx").reset_index(drop=True)
-    product["day_label"] = product["day_idx"].map(
+    product["day_label"] = product["observation_day"].map(
         lambda value: f"День {int(value):03d}"
     )
     edge_days = {product["day_idx"].min(), product["day_idx"].max()}
@@ -250,6 +250,17 @@ def validate_exports(
 ) -> None:
     if product.empty or not product["day_idx"].is_unique:
         raise ValueError("Нарушен ключ продуктовой выгрузки")
+    if product["observation_day"].tolist() != list(
+        range(1, len(product) + 1)
+    ):
+        raise ValueError("Нарушена нумерация дней наблюдения")
+    reaction_rates = product[["listener_like_rate", "listener_dislike_rate"]]
+    if not reaction_rates.apply(lambda column: column.between(0, 1).all()).all():
+        raise ValueError("Доли слушателей с реакциями выходят за диапазон от 0 до 1")
+    if (product["listener_likers"] > product["listeners"]).any():
+        raise ValueError("Число слушателей с лайком превышает число слушателей")
+    if (product["listener_dislikers"] > product["listeners"]).any():
+        raise ValueError("Число слушателей с дизлайком превышает число слушателей")
     if tracks.empty or not tracks["item_id"].is_unique:
         raise ValueError("Нарушен ключ выгрузки треков")
     if int(tracks["listens"].min()) < 100:

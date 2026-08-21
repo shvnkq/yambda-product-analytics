@@ -83,6 +83,27 @@ def validate_all_marts(
         f"SELECT sum(events), sum(listens) "
         f"FROM read_parquet('{sql_path(product_path)}')"
     ).fetchone()
+    (
+        invalid_product_reaction_rates,
+        invalid_product_reaction_counts,
+        product_listener_likers,
+        product_listener_dislikers,
+    ) = connection.execute(
+        f"""
+        SELECT
+            count(*) FILTER (
+                WHERE listener_like_rate NOT BETWEEN 0 AND 1
+                   OR listener_dislike_rate NOT BETWEEN 0 AND 1
+            ),
+            count(*) FILTER (
+                WHERE listener_likers > listeners
+                   OR listener_dislikers > listeners
+            ),
+            sum(listener_likers),
+            sum(listener_dislikers)
+        FROM read_parquet('{sql_path(product_path)}')
+        """
+    ).fetchone()
     user_rows, unique_users = connection.execute(
         f"SELECT count(*), count(DISTINCT uid) "
         f"FROM read_parquet('{sql_path(user_path)}')"
@@ -90,6 +111,14 @@ def validate_all_marts(
     user_day_rows, user_day_keys, user_day_listens = connection.execute(
         f"SELECT count(*), count(DISTINCT (uid, day_idx)), sum(listens) "
         f"FROM read_parquet('{sql_path(user_day_path)}')"
+    ).fetchone()
+    user_day_listener_likers, user_day_listener_dislikers = connection.execute(
+        f"""
+        SELECT
+            count(*) FILTER (WHERE listens > 0 AND likes > 0),
+            count(*) FILTER (WHERE listens > 0 AND dislikes > 0)
+        FROM read_parquet('{sql_path(user_day_path)}')
+        """
     ).fetchone()
     retention_rows, retention_keys, invalid_retention, invalid_d0 = connection.execute(
         f"""
@@ -127,6 +156,14 @@ def validate_all_marts(
     checks = {
         "product_events_match_source": product_events == stage_events,
         "product_listens_match_source": product_listens == stage_listens,
+        "product_reaction_rates_are_valid": (
+            invalid_product_reaction_rates == 0
+            and invalid_product_reaction_counts == 0
+        ),
+        "product_reactions_match_user_day": (
+            product_listener_likers == user_day_listener_likers
+            and product_listener_dislikers == user_day_listener_dislikers
+        ),
         "user_key_is_unique": user_rows == unique_users == stage_users,
         "user_day_key_is_unique": user_day_rows == user_day_keys,
         "user_day_listens_match_source": user_day_listens == stage_listens,

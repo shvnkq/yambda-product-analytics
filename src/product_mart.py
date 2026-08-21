@@ -9,9 +9,31 @@ def build_product_mart(database_path: Path, output_path: Path) -> dict[str, int]
     connection.execute(
         f"""
         COPY (
-            SELECT
-                day_idx,
-                count(DISTINCT uid) AS active_users,
+            WITH day_user_flags AS (
+                SELECT
+                    day_idx,
+                    uid,
+                    bool_or(is_listen) AS has_listen,
+                    bool_or(event_type = 'like') AS has_like,
+                    bool_or(event_type = 'dislike') AS has_dislike
+                FROM stage_events
+                GROUP BY day_idx, uid
+            ),
+            day_reactions AS (
+                SELECT
+                    day_idx,
+                    count(*) FILTER (WHERE has_listen AND has_like)
+                        AS listener_likers,
+                    count(*) FILTER (WHERE has_listen AND has_dislike)
+                        AS listener_dislikers
+                FROM day_user_flags
+                GROUP BY day_idx
+            ),
+            product_day AS (
+                SELECT
+                    day_idx,
+                    day_idx + 1 AS observation_day,
+                    count(DISTINCT uid) AS active_users,
                 count(*) AS events,
                 count(*) FILTER (WHERE is_listen) AS listens,
                 count(DISTINCT uid) FILTER (WHERE is_listen) AS listeners,
@@ -62,8 +84,19 @@ def build_product_mart(database_path: Path, output_path: Path) -> dict[str, int]
                     AS dislikes_per_1000_listens,
                 sum(play_seconds) / nullif(count(DISTINCT uid), 0) / 60.0
                     AS minutes_per_active_user
-            FROM stage_events
-            GROUP BY day_idx
+                FROM stage_events
+                GROUP BY day_idx
+            )
+            SELECT
+                p.*,
+                r.listener_likers,
+                r.listener_dislikers,
+                r.listener_likers * 1.0 / nullif(p.listeners, 0)
+                    AS listener_like_rate,
+                r.listener_dislikers * 1.0 / nullif(p.listeners, 0)
+                    AS listener_dislike_rate
+            FROM product_day AS p
+            JOIN day_reactions AS r USING (day_idx)
             ORDER BY day_idx
         ) TO '{sql_path(output_path)}' (FORMAT PARQUET, COMPRESSION ZSTD)
         """
